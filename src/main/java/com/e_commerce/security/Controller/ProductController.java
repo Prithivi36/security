@@ -27,4 +27,9 @@ public class ProductController {
     public ResponseEntity<Products> findProduct(@PathVariable String id){
         return ResponseEntity.ok(productService.findById(id));
     }
+
+    @PutMapping("/buy/{id}/{username}")
+    public ResponseEntity<String> buyProduct(@PathVariable("id") String id,@PathVariable("username") String username){
+        return ResponseEntity.ok(productService.buyProduct(id,username));
+    }
 }

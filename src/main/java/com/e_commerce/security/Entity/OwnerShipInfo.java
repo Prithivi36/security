@@ -15,7 +15,9 @@ import java.util.List;
 @NoArgsConstructor
 @Document(collection = "ownershipLog")
 public class OwnerShipInfo {
+    private String _id;
     private String code;
     private LocalDateTime date;
+    private LocalDateTime lastUpdated;
     private List<String> ownerInfoList;
 }
