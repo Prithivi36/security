@@ -2,8 +2,11 @@ package com.e_commerce.security.Service;
 
 import com.e_commerce.security.Entity.OwnerShipInfo;
 import com.e_commerce.security.Entity.Products;
+import com.e_commerce.security.Entity.UserData;
+import com.e_commerce.security.Entity.UsersCodeCollection;
 import com.e_commerce.security.Repository.OwnerShipRepo;
 import com.e_commerce.security.Repository.ProductRepo;
+import com.e_commerce.security.Repository.UserDataRepo;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +21,7 @@ import java.util.Random;
 public class ProductService {
     ProductRepo productRepo;
     OwnerShipRepo ownerShipRepo;
+    UserDataRepo userDataRepo;
 
     public static String generateAlphanumericCode(int length) {
         String ALPHANUMERIC = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -55,6 +59,29 @@ public class ProductService {
         owl.addLast("Owner ("+owl.size()+") :"+user);
         ownerShipRepo.save(owi);
         productRepo.deleteById(id);
+
+
+        String owner=product.getOwner();
+        String productName=product.getProductName();
+        UserData usd=userDataRepo.findByName(owner);
+
+
+        List<UsersCodeCollection> ucc=(usd.getProducts());
+        for(UsersCodeCollection uc : ucc){
+            if(uc.getProductName().equals(productName)){
+                List<String> codes = uc.getCodes();
+                String newCode=codes.getFirst();
+                codes.removeFirst();
+                product.setUniqCode(newCode);
+                break;
+            }
+        }
+
+        usd.setProducts(ucc);
+        userDataRepo.save(usd);
+        product.set_id(null);
+        productRepo.save(product);
+
         return "That's your product now";
     }
 
