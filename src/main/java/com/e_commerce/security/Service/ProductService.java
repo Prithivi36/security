@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -37,7 +38,6 @@ public class ProductService {
         String uniqCode=generateAlphanumericCode(16);
         List<String> owl=new LinkedList<>();
         products.setUniqCode(uniqCode);
-        productRepo.save(products);
         OwnerShipInfo owi=new OwnerShipInfo();
         owi.setCode(uniqCode);
         owi.setDate(LocalDateTime.now());
@@ -46,6 +46,35 @@ public class ProductService {
         owi.setOwnerInfoList(owl);
 
         ownerShipRepo.save(owi);
+
+        UserData userData=userDataRepo.findByName(products.getOwner());
+        List<UsersCodeCollection> productsList=userData.getProducts();
+
+        boolean found=false;
+
+        for(UsersCodeCollection ucc : productsList){
+            if(ucc.getProductName().equals(products.getProductName())){
+                List<String> codes= ucc.getCodes();
+                codes.addLast(uniqCode);
+                found=true;
+                break;
+            }
+        }
+        if(!found) {
+            productRepo.save(products);
+            UsersCodeCollection newEntity = new UsersCodeCollection();
+            List<String> codes = new ArrayList<>();
+            codes.addLast(uniqCode);
+            newEntity.setProductName(products.getProductName());
+            newEntity.setCodes(codes);
+            productsList.addLast(
+                    newEntity
+            );
+        }
+
+            userData.setProducts(productsList);
+            userDataRepo.save(userData);
+
 
         return "Successfully saved , your code is :" +uniqCode;
     }
@@ -65,22 +94,57 @@ public class ProductService {
         String productName=product.getProductName();
         UserData usd=userDataRepo.findByName(owner);
 
+        UserData buyer=userDataRepo.findByName(user);
+        List<UsersCodeCollection> buyerData=buyer.getProducts();
+
+        boolean found1=false;
+
+        for(UsersCodeCollection ucc : buyerData){
+            if(ucc.getProductName().equals(productName)){
+                List<String> codes= ucc.getCodes();
+                codes.addLast(product.getUniqCode());
+                found1=true;
+                break;
+            }
+        }
+
+        if(!found1){
+            UsersCodeCollection newEntity=new UsersCodeCollection();
+            List<String> codes=new ArrayList<>();
+            codes.addLast(product.getUniqCode());
+            newEntity.setProductName(productName);
+            newEntity.setCodes(codes);
+            buyerData.addLast(
+                    newEntity
+            );
+        }
+            buyer.setProducts(
+                    buyerData
+            );
+            userDataRepo.save(buyer);
+
+
 
         List<UsersCodeCollection> ucc=(usd.getProducts());
+        boolean found=false;
         for(UsersCodeCollection uc : ucc){
             if(uc.getProductName().equals(productName)){
+                found=true;
                 List<String> codes = uc.getCodes();
-                String newCode=codes.getFirst();
                 codes.removeFirst();
+                String newCode=codes.getFirst();
                 product.setUniqCode(newCode);
                 break;
             }
         }
 
-        usd.setProducts(ucc);
-        userDataRepo.save(usd);
-        product.set_id(null);
-        productRepo.save(product);
+        if(found) {
+            usd.setProducts(ucc);
+            userDataRepo.save(usd);
+            product.set_id(null);
+            productRepo.save(product);
+        }
+
 
         return "That's your product now";
     }
