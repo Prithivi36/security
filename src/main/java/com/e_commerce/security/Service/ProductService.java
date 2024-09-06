@@ -85,6 +85,11 @@ public class ProductService {
         OwnerShipInfo owi=ownerShipRepo.findByCode(code);
         List<String> owl=owi.getOwnerInfoList();
         owi.setLastUpdated(LocalDateTime.now());
+        String lastOwnerText =owl.getLast();
+        String lastOwner = lastOwnerText.split(":")[1];
+        if(!lastOwner.equals(product.getOwner())){
+            return "That's never your product";
+        }
         owl.addLast("Owner ("+owl.size()+") :"+user);
         ownerShipRepo.save(owi);
         productRepo.deleteById(id);
@@ -128,11 +133,18 @@ public class ProductService {
         List<UsersCodeCollection> ucc=(usd.getProducts());
         boolean found=false;
         for(UsersCodeCollection uc : ucc){
-            if(uc.getProductName().equals(productName)){
+            if(!uc.getCodes().isEmpty()&&uc.getProductName().equals(productName)){
                 found=true;
                 List<String> codes = uc.getCodes();
+                if(codes.size()<=1){
+                    codes.removeFirst();
+                    userDataRepo.save(usd);
+                    found=false;
+                    break;
+                }
+                String newCode=codes.get(1);
                 codes.removeFirst();
-                String newCode=codes.getFirst();
+
                 product.setUniqCode(newCode);
                 break;
             }
